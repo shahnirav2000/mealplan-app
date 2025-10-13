@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Plus, Trash2, Settings, Home, Calendar, ShoppingCart, Users, Activity, Mail, MessageCircle, Printer, Download, User, ChevronRight, Sparkles } from 'lucide-react';
+import { LogOut, Plus, Trash2, Settings, Home, Calendar, ShoppingCart, Users, Activity, Mail, MessageCircle, Printer, Download, User, ChevronRight, Sparkles, Edit2, X, Check } from 'lucide-react';
 
 export default function MealPlannerApp() {
   const [currentScreen, setCurrentScreen] = useState('login');
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState({});
+  const [users, setUsers] = useState({
+    Arun: { name: 'Arun', meals: {}, weeklyPlans: [], preferences: {} },
+    Preeti: { name: 'Preeti', meals: {}, weeklyPlans: [], preferences: {} },
+    Nirav: { name: 'Nirav', meals: {}, weeklyPlans: [], preferences: {} }
+  });
   const [meals, setMeals] = useState({});
+  const [userMeals, setUserMeals] = useState({});
   const [weeklyPlans, setWeeklyPlans] = useState({});
-  const [selectedUser, setSelectedUser] = useState(null);
   const [familyMembers, setFamilyMembers] = useState({});
+  const [newUserName, setNewUserName] = useState('');
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [editingMeal, setEditingMeal] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [mealPreference, setMealPreference] = useState('');
 
   // Comprehensive meal data from your Google Sheet
-  const mealData = [
-    // Lunch items
+  const defaultMealData = [
     { id: 1, name: 'Fansi Roti Dal Rice', type: 'Lunch', calories: 450, base: 'Fansi' },
     { id: 2, name: 'Bhindi Roti Dal Rice', type: 'Lunch', calories: 440, base: 'Bhindi' },
     { id: 3, name: 'Flower Roti Dal Rice', type: 'Lunch', calories: 435, base: 'Flower' },
@@ -29,8 +37,6 @@ export default function MealPlannerApp() {
     { id: 14, name: 'Burrito bowl', type: 'Lunch', calories: 530 },
     { id: 15, name: 'Hummus Salad', type: 'Lunch', calories: 380 },
     { id: 16, name: 'Sev Tomato Rotli', type: 'Lunch', calories: 410 },
-
-    // Dinner items
     { id: 20, name: 'Khichdi Kadhi Shaak', type: 'Dinner', calories: 380 },
     { id: 21, name: 'Taco', type: 'Dinner', calories: 420 },
     { id: 22, name: 'Burger', type: 'Dinner', calories: 580 },
@@ -42,60 +48,120 @@ export default function MealPlannerApp() {
     { id: 28, name: 'Slow Cooker Soup', type: 'Dinner', calories: 300 },
     { id: 29, name: 'Toast Sandwich', type: 'Dinner', calories: 390 },
     { id: 30, name: 'Aloo/Cheese/Paneer Paratha', type: 'Dinner', calories: 490 },
-    { id: 31, name: 'Thepla Sukki Bhaji Dahi', type: 'Dinner', calories: 420 },
-    { id: 32, name: 'Idli sambar chutney', type: 'Dinner', calories: 320 },
-    { id: 33, name: 'Meds vada sambar chutney', type: 'Dinner', calories: 350 },
-    { id: 34, name: 'Masala dosa chutney', type: 'Dinner', calories: 380 },
-    { id: 35, name: 'Dosa sambar chutney', type: 'Dinner', calories: 360 },
-    { id: 36, name: 'Mayo sandwich', type: 'Dinner', calories: 420 },
-    { id: 37, name: 'Veg grill sandwich', type: 'Dinner', calories: 400 },
-    { id: 38, name: 'Vada pav', type: 'Dinner', calories: 500 },
-    { id: 39, name: 'Misal pav', type: 'Dinner', calories: 520 },
-    { id: 40, name: 'Pav bhaji', type: 'Dinner', calories: 550 },
-    { id: 41, name: 'Biryani', type: 'Dinner', calories: 620 },
-    { id: 42, name: 'Dabeli', type: 'Dinner', calories: 480 },
-    { id: 43, name: 'Pani Puri', type: 'Dinner', calories: 280 },
-    { id: 44, name: 'Bhel Sev Puri', type: 'Dinner', calories: 350 },
-    { id: 45, name: 'Tomato Omlette', type: 'Dinner', calories: 320 },
-    { id: 46, name: 'Quinoa with schezwan sauce', type: 'Dinner', calories: 420 },
-    { id: 47, name: 'Maggi', type: 'Dinner', calories: 300 },
-    { id: 54, name: 'Subway Sandwich', type: 'Dinner', calories: 510 },
-    { id: 55, name: 'Oatmeal', type: 'Dinner', calories: 280 },
-    { id: 56, name: 'Paneer Paratha', type: 'Dinner', calories: 480 },
-    { id: 57, name: 'Thai Green Curry', type: 'Dinner', calories: 480 },
-    { id: 58, name: 'Chinese Noodles', type: 'Dinner', calories: 490 },
-
-    // Morning/Lunch items
     { id: 48, name: 'Dhokla & Vagharelo Rice', type: 'Morning Lunch', calories: 380, base: 'Dhokla' },
     { id: 49, name: 'Thepla Sukki Bhaji', type: 'Morning Lunch', calories: 360 },
     { id: 50, name: 'Pasta and Cheese Toast Sandwich', type: 'Morning Lunch', calories: 450 },
     { id: 51, name: 'Toast Sandwich', type: 'Morning Lunch', calories: 360 },
     { id: 52, name: 'Roti Bhindi', type: 'Morning Lunch', calories: 370, base: 'Bhindi' },
     { id: 53, name: 'Roti Fansi', type: 'Morning Lunch', calories: 360, base: 'Fansi' },
-
-    // High Protein for Nirav
-    { id: 59, name: 'Bajra/Jowar moong dal khichdi', type: 'Dinner', calories: 420 },
-    { id: 60, name: 'Quinoa Tofu Chinese Sauce Recipe', type: 'Dinner', calories: 450 },
-    { id: 61, name: 'Mooth Cooked', type: 'Dinner', calories: 480 },
-    { id: 62, name: 'Black/Kabuli Chana Salad', type: 'Dinner', calories: 390 },
   ];
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  // Intelligent meal selection logic
+  const initializeUser = (username) => {
+    setCurrentUser(username);
+    if (!meals[username]) {
+      const emptyWeek = {};
+      days.forEach(day => { emptyWeek[day] = { lunch: null, dinner: null, morning: null }; });
+      setMeals(prev => ({ ...prev, [username]: emptyWeek }));
+    }
+    if (!userMeals[username]) {
+      setUserMeals(prev => ({ ...prev, [username]: [...defaultMealData] }));
+    }
+    setCurrentScreen('dashboard');
+  };
+
+  const createNewUser = () => {
+    if (newUserName.trim() === '') return;
+    
+    setUsers(prev => ({
+      ...prev,
+      [newUserName]: { name: newUserName, meals: {}, weeklyPlans: [], preferences: {} }
+    }));
+
+    const emptyWeek = {};
+    days.forEach(day => { emptyWeek[day] = { lunch: null, dinner: null, morning: null }; });
+    setMeals(prev => ({ ...prev, [newUserName]: emptyWeek }));
+
+    setCurrentScreen('setupNewUser');
+    setCurrentUser(newUserName);
+    setNewUserName('');
+    setShowAddUser(false);
+  };
+
+  const startEditMeal = (mealType, day, meal) => {
+    setEditingMeal({ day, mealType, meal });
+    setEditFormData({
+      name: meal ? meal.name : '',
+      type: meal ? meal.type : mealType.charAt(0).toUpperCase() + mealType.slice(1),
+      calories: meal ? meal.calories : ''
+    });
+    setMealPreference('');
+  };
+
+  const saveMealEdit = () => {
+    if (!editFormData.name || !editFormData.calories) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    const mealId = Date.now();
+    const newMeal = {
+      id: mealId,
+      name: editFormData.name,
+      type: editFormData.type,
+      calories: parseInt(editFormData.calories)
+    };
+
+    // Update user's meal list
+    setUserMeals(prev => ({
+      ...prev,
+      [currentUser]: [...(prev[currentUser] || []), newMeal]
+    }));
+
+    // Update user preferences
+    setUsers(prev => ({
+      ...prev,
+      [currentUser]: {
+        ...prev[currentUser],
+        preferences: {
+          ...prev[currentUser].preferences,
+          [mealId]: mealPreference
+        }
+      }
+    }));
+
+    // Update weekly plan
+    setMeals(prev => ({
+      ...prev,
+      [currentUser]: {
+        ...prev[currentUser],
+        [editingMeal.day]: {
+          ...prev[currentUser][editingMeal.day],
+          [editingMeal.mealType]: newMeal
+        }
+      }
+    }));
+
+    setEditingMeal(null);
+    setEditFormData({});
+    alert(`✅ Meal "${newMeal.name}" added to your account with preference: ${mealPreference}`);
+  };
+
   const generateIntelligentPlan = () => {
     const plan = {};
     const usedMeals = new Set();
+    const availableMeals = userMeals[currentUser] || defaultMealData;
+    
     const mealsByType = {
-      Lunch: mealData.filter(m => m.type === 'Lunch'),
-      Dinner: mealData.filter(m => m.type === 'Dinner'),
-      'Morning Lunch': mealData.filter(m => m.type === 'Morning Lunch')
+      Lunch: availableMeals.filter(m => m.type === 'Lunch'),
+      Dinner: availableMeals.filter(m => m.type === 'Dinner'),
+      'Morning Lunch': availableMeals.filter(m => m.type === 'Morning Lunch')
     };
 
     days.forEach((day, dayIndex) => {
       plan[day] = {};
 
-      // 1. Pick a Morning Lunch for the day
       const availableMornings = mealsByType['Morning Lunch'].filter(m => !usedMeals.has(m.id));
       const morningMeal = availableMornings[Math.floor(Math.random() * availableMornings.length)];
       if (morningMeal) {
@@ -103,7 +169,6 @@ export default function MealPlannerApp() {
         usedMeals.add(morningMeal.id);
       }
 
-      // 2. Pick Lunch - If morning has a "base" (like Fansi, Bhindi), try to find a lunch with same base
       let lunchMeal = null;
       const availableLunches = mealsByType['Lunch'].filter(m => !usedMeals.has(m.id));
 
@@ -114,7 +179,6 @@ export default function MealPlannerApp() {
         }
       }
 
-      // If no matching lunch found, pick random
       if (!lunchMeal && availableLunches.length > 0) {
         lunchMeal = availableLunches[Math.floor(Math.random() * availableLunches.length)];
       }
@@ -124,7 +188,6 @@ export default function MealPlannerApp() {
         usedMeals.add(lunchMeal.id);
       }
 
-      // 3. Pick Dinner - Ensure variety and different from lunch/morning
       const availableDinners = mealsByType['Dinner'].filter(m => !usedMeals.has(m.id));
       if (availableDinners.length > 0) {
         const dinnerMeal = availableDinners[Math.floor(Math.random() * availableDinners.length)];
@@ -152,21 +215,6 @@ export default function MealPlannerApp() {
     setCurrentScreen('planner');
   };
 
-  const initializeUser = (username) => {
-    setCurrentUser(username);
-    setSelectedUser(username);
-    if (!users[username]) {
-      setUsers(prev => ({ ...prev, [username]: { name: username, meals: {}, weeklyPlans: [] } }));
-      setFamilyMembers(prev => ({ ...prev, [username]: [] }));
-    }
-    if (!meals[username]) {
-      const emptyWeek = {};
-      days.forEach(day => { emptyWeek[day] = { lunch: null, dinner: null, morning: null }; });
-      setMeals(prev => ({ ...prev, [username]: emptyWeek }));
-    }
-    setCurrentScreen('dashboard');
-  };
-
   const calculateWeeklyCalories = (userMeals) => {
     let total = 0;
     Object.values(userMeals).forEach(day => {
@@ -179,7 +227,6 @@ export default function MealPlannerApp() {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setSelectedUser(null);
     setCurrentScreen('login');
   };
 
@@ -193,7 +240,7 @@ export default function MealPlannerApp() {
         </div>
 
         <div className="space-y-4">
-          {['Arun', 'Preeti', 'Nirav'].map(name => (
+          {Object.keys(users).map(name => (
             <button
               key={name}
               onClick={() => initializeUser(name)}
@@ -204,6 +251,39 @@ export default function MealPlannerApp() {
           ))}
         </div>
 
+        <button
+          onClick={() => setShowAddUser(!showAddUser)}
+          className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+        >
+          <Plus size={20} /> Add New User
+        </button>
+
+        {showAddUser && (
+          <div className="mt-6 bg-gray-800 p-6 rounded-lg">
+            <input
+              type="text"
+              placeholder="Enter new user name"
+              value={newUserName}
+              onChange={(e) => setNewUserName(e.target.value)}
+              className="w-full bg-gray-700 text-white px-4 py-2 rounded mb-3 border border-gray-600"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={createNewUser}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold transition"
+              >
+                Create User
+              </button>
+              <button
+                onClick={() => { setShowAddUser(false); setNewUserName(''); }}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded font-semibold transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8 p-4 bg-gray-800 rounded-lg">
           <p className="text-gray-400 text-center text-sm">✨ Powered by Intelligent Meal Planning</p>
         </div>
@@ -211,12 +291,121 @@ export default function MealPlannerApp() {
     </div>
   );
 
+  // New User Setup Screen
+  const SetupNewUserScreen = () => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <h1 className="text-3xl font-bold text-white mb-2">Welcome, {currentUser}! 👋</h1>
+        <p className="text-gray-400 mb-8">Let's set up your meal preferences</p>
+
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4 mb-6">
+          <h2 className="text-xl font-bold text-white">Import Meal Data</h2>
+          <p className="text-gray-400 text-sm">Choose how to get started:</p>
+          
+          <button
+            onClick={() => {
+              setUserMeals(prev => ({ ...prev, [currentUser]: defaultMealData }));
+              alert('✅ Default meal data imported!');
+              setCurrentScreen('dashboard');
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition text-left"
+          >
+            📥 Import Default Meals
+          </button>
+          
+          <button
+            onClick={() => {
+              setUserMeals(prev => ({ ...prev, [currentUser]: [] }));
+              alert('✅ Starting with empty meal list. You can add meals as you go!');
+              setCurrentScreen('dashboard');
+            }}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition text-left"
+          >
+            ➕ Start Fresh
+          </button>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded font-semibold transition"
+        >
+          Back to Login
+        </button>
+      </div>
+    </div>
+  );
+
+  // Edit Meal Modal
+  const EditMealModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full">
+        <h2 className="text-2xl font-bold text-white mb-4">
+          {editingMeal.meal ? 'Edit Meal' : 'Add New Meal'}
+        </h2>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-400 text-sm mb-2">Meal Name</label>
+            <input
+              type="text"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              className="w-full bg-gray-800 text-white px-4 py-2 rounded border border-gray-600"
+              placeholder="e.g., Paneer Tikka"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-400 text-sm mb-2">Calories</label>
+            <input
+              type="number"
+              value={editFormData.calories}
+              onChange={(e) => setEditFormData({ ...editFormData, calories: e.target.value })}
+              className="w-full bg-gray-800 text-white px-4 py-2 rounded border border-gray-600"
+              placeholder="e.g., 450"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-400 text-sm mb-2">Preference (Optional)</label>
+            <select
+              value={mealPreference}
+              onChange={(e) => setMealPreference(e.target.value)}
+              className="w-full bg-gray-800 text-white px-4 py-2 rounded border border-gray-600"
+            >
+              <option value="">Select preference...</option>
+              <option value="Love it!">❤️ Love it!</option>
+              <option value="Like it">👍 Like it</option>
+              <option value="Neutral">😐 Neutral</option>
+              <option value="Occasional">🤔 Occasional</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={saveMealEdit}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded font-semibold transition flex items-center justify-center gap-2"
+          >
+            <Check size={18} /> Save Meal
+          </button>
+          <button
+            onClick={() => setEditingMeal(null)}
+            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded font-semibold transition flex items-center justify-center gap-2"
+          >
+            <X size={18} /> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // Dashboard Screen
   const DashboardScreen = () => {
-    const userMeals = meals[currentUser] || {};
-    const weeklyCalories = calculateWeeklyCalories(userMeals);
+    const userWeek = meals[currentUser] || {};
+    const weeklyCalories = calculateWeeklyCalories(userWeek);
     const avgDaily = Math.round(weeklyCalories / 7);
-    const mealCount = Object.values(userMeals).reduce((count, day) => count + Object.values(day).filter(m => m).length, 0);
+    const mealCount = Object.values(userWeek).reduce((count, day) => count + Object.values(day).filter(m => m).length, 0);
     const hasActivePlan = mealCount > 0;
 
     return (
@@ -307,7 +496,7 @@ export default function MealPlannerApp() {
 
   // Weekly Planner Screen
   const PlannerScreen = () => {
-    const userMeals = meals[currentUser] || {};
+    const userWeek = meals[currentUser] || {};
 
     return (
       <div className="p-6 max-w-7xl mx-auto">
@@ -335,13 +524,24 @@ export default function MealPlannerApp() {
                   </td>
                   {days.map(day => (
                     <td key={`${day}-${mealType}`} className="bg-gray-900 p-3 border border-gray-700">
-                      {userMeals[day] && userMeals[day][mealType] ? (
-                        <div className="bg-gradient-to-r from-gray-800 to-gray-700 p-3 rounded border border-gray-600">
-                          <p className="text-white font-semibold text-sm">{userMeals[day][mealType].name}</p>
-                          <p className="text-gray-400 text-xs mt-1">⚡ {userMeals[day][mealType].calories} cal</p>
+                      {userWeek[day] && userWeek[day][mealType] ? (
+                        <div className="bg-gradient-to-r from-gray-800 to-gray-700 p-3 rounded border border-gray-600 group relative">
+                          <p className="text-white font-semibold text-sm">{userWeek[day][mealType].name}</p>
+                          <p className="text-gray-400 text-xs mt-1">⚡ {userWeek[day][mealType].calories} cal</p>
+                          <button
+                            onClick={() => startEditMeal(mealType, day, userWeek[day][mealType])}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-blue-600 hover:bg-blue-700 p-1 rounded transition"
+                          >
+                            <Edit2 size={14} className="text-white" />
+                          </button>
                         </div>
                       ) : (
-                        <span className="text-gray-500 text-sm">-</span>
+                        <button
+                          onClick={() => startEditMeal(mealType, day, null)}
+                          className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 px-3 rounded flex items-center justify-center gap-1 transition"
+                        >
+                          <Plus size={16} /> Add
+                        </button>
                       )}
                     </td>
                   ))}
@@ -353,7 +553,7 @@ export default function MealPlannerApp() {
 
         <div className="bg-blue-900 border border-blue-700 p-4 rounded-lg mb-8">
           <p className="text-blue-200 text-sm">
-            ✨ <strong>Intelligent Features:</strong> No meals repeated this week. Similar ingredients intelligently paired (e.g., Morning Fansi + Lunch Fansi). Balanced nutrition across all days.
+            ✨ <strong>Intelligent Features:</strong> No meals repeated this week. Similar ingredients intelligently paired. Balanced nutrition across all days. Click edit icon to customize meals!
           </p>
         </div>
 
@@ -388,50 +588,46 @@ export default function MealPlannerApp() {
   };
 
   // Profile Screen
-  const ProfileScreen = () => {
-    const userFamily = familyMembers[currentUser] || [];
+  const ProfileScreen = () => (
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold text-white mb-8">Profile & Family</h1>
 
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-8">Profile & Family</h1>
-
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Your Profile</h2>
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-400 text-sm">Name</p>
-              <p className="text-white text-lg font-semibold">{currentUser}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm">Member Since</p>
-              <p className="text-white text-lg font-semibold">2025</p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-sm">Health Score</p>
-              <p className="text-green-400 text-lg font-semibold">78/100</p>
-            </div>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 mb-8">
+        <h2 className="text-2xl font-bold text-white mb-4">Your Profile</h2>
+        <div className="space-y-4">
+          <div>
+            <p className="text-gray-400 text-sm">Name</p>
+            <p className="text-white text-lg font-semibold">{currentUser}</p>
           </div>
-        </div>
-
-        <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-            <Users size={24} /> Family Members
-          </h2>
-          <div className="space-y-3 mb-4">
-            {['Arun', 'Preeti', 'Nirav'].map(member => (
-              <div key={member} className="bg-gray-800 p-4 rounded flex justify-between items-center">
-                <span className="text-white font-semibold">{member}</span>
-                <span className="text-gray-400 text-sm">Health Score: 75%</span>
-              </div>
-            ))}
+          <div>
+            <p className="text-gray-400 text-sm">Member Since</p>
+            <p className="text-white text-lg font-semibold">2025</p>
           </div>
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-semibold transition">
-            + Add Family Member
-          </button>
+          <div>
+            <p className="text-gray-400 text-sm">Health Score</p>
+            <p className="text-green-400 text-lg font-semibold">78/100</p>
+          </div>
         </div>
       </div>
-    );
-  };
+
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <Users size={24} /> Family Members
+        </h2>
+        <div className="space-y-3 mb-4">
+          {Object.keys(users).map(member => (
+            <div key={member} className="bg-gray-800 p-4 rounded flex justify-between items-center">
+              <span className="text-white font-semibold">{member}</span>
+              <span className="text-gray-400 text-sm">Health Score: 75%</span>
+            </div>
+          ))}
+        </div>
+        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-semibold transition">
+          + Add Family Member
+        </button>
+      </div>
+    </div>
+  );
 
   // History Screen
   const HistoryScreen = () => {
@@ -476,9 +672,12 @@ export default function MealPlannerApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {currentScreen === 'login' && <LoginScreen />}
+      {currentScreen === 'setupNewUser' && <SetupNewUserScreen />}
 
-      {currentScreen !== 'login' && (
+      {currentScreen !== 'login' && currentScreen !== 'setupNewUser' && (
         <>
+          {editingMeal && <EditMealModal />}
+          
           <div className="pb-24">
             {currentScreen === 'dashboard' && <DashboardScreen />}
             {currentScreen === 'planner' && <PlannerScreen />}
